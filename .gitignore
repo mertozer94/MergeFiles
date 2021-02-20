@@ -1,0 +1,10 @@
+*.iml
+.idea/**
+.settings/**
+checkpoint/**
+input/**
+output/**
+spark-warehouse/**
+target/**
+src/test/checkpoint/**
+src/test/output/**
