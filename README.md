@@ -80,9 +80,69 @@ And could be ran by;
 
 *mvn test*
 
+
+**Prerequisites**
+
+You need to have maven
+
+and docker (if you want to launch the application on a docker cluster)
+
+installed
+
 **Installation**
 
-mvn clean install
 
-docker
+**Launch on a spark cluster with docker:**
+
+
+1. git clone https://github.com/mertozer94/MergeFiles.git
+
+2. Create jar at the root of the project
+cd /path/toYourProject
+mvn clean package
+
+3. Modify docker-compose.yml
+
+Change all of the occurences of '/home/mert/IdeaProjects/VeeavaMergeFiles' to {/path/toYourProject}
+
+4. Launch spark cluster
+docker-compose up -d
+
+go to http://localhost:8080/
+
+and save spark url we are going to use to submit our job
+url will look like the following: spark://bbbb2660e3f6:707
+
+5. Connect to the docker container
+
+docker-compose exec spark bash
+
+6. Submit the job
+
+./bin/spark-submit --class com.merge.Main \  
+--master {sparUrlFromStep4} \  
+--deploy-mode client \  
+{/path/toYourProject}/target/VeevaMergeFiles-1.0-jar-with-dependencies.jar \  
+{sparUrlFromStep4} \  
+{/path/toYourProject}/
+
+The '/' at the end is important.
+
+7.  Add data and verify results
+
+put data in input directory and verify the files created in the output directory
+
+
+Don't forget to stop cluster with
+docker stop veeavamergefiles_spark_1 veeavamergefiles_spark-worker-1_1 veeavamergefiles_spark-worker-2_1
+
+**Launch it within your IDE locally:**
+
+1. Open the project in your favorite IDE
+
+2. mvn clean package
+
+3. run the Main.scala class with giving two parameters spark url and path to this project
+
+4. put data in input directory and verify the files created in the output directory
 

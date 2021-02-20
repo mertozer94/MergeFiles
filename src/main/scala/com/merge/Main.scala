@@ -1,8 +1,10 @@
+package com.merge
+
 import java.io.{File, FileWriter}
 
-import init.Init.initSparkSession
-import helper.ArgsHelper.argsHelper
-import model.CountMetric
+import com.merge.helper.ArgsHelper.argsHelper
+import com.merge.init.Init.initSparkSession
+import com.merge.model.CountMetric
 import org.apache.commons.io.FileUtils
 import org.apache.spark.sql.ForeachWriter
 import org.apache.spark.sql.functions.{col, lit}
@@ -14,6 +16,7 @@ object Main extends Serializable {
     // get parameters from cli commands
     val parameters = argsHelper(args)
 
+    val projectPath = parameters.getOrElse("Path", getClass.getResource("").getPath)
     // Init spark session
     val spark = initSparkSession("VeevaMergeFiles", parameters.getOrElse("Master", "local"))
     spark.sparkContext.setLogLevel("ERROR")
@@ -24,7 +27,7 @@ object Main extends Serializable {
     val data = spark
       .readStream
       .option("maxFilesPerTrigger", 1)
-      .text(s"input/*")
+      .text(projectPath + "input/*")
 
 
     // Merges all files in the input directory (we could add also a new files into directory while this application is running)
@@ -38,12 +41,12 @@ object Main extends Serializable {
       .partitionBy("partitionCol")
       .outputMode(OutputMode.Append())
       .format("text")
-      .option("path", s"output/merged-files/")
-      .option("checkpointLocation", s"checkpoint/merged-files/")
+      .option("path", projectPath + "output/merged-files/")
+      .option("checkpointLocation", projectPath + "checkpoint/merged-files/")
       .start()
 
 
-    val writerForText: ForeachWriter[(String, CountMetric)] = createWriterForCountMetric()
+    val writerForText: ForeachWriter[(String, CountMetric)] = createWriterForCountMetric(projectPath)
 
     // Merges all files in the input directory (we could add also a new files into directory while this application is running)
     // And writes them into output directory with the total number of occurrence of that element in all files.
@@ -58,8 +61,8 @@ object Main extends Serializable {
       .writeStream
       .outputMode(OutputMode.Complete())
       .foreach(writerForText)
-      .option("path", s"output/count-metric/")
-      .option("checkpointLocation", s"checkpoint/count-metric/")
+      .option("path", projectPath + "output/count-metric/")
+      .option("checkpointLocation", projectPath + "checkpoint/count-metric/")
       .start()
 
     spark.streams.awaitAnyTermination()
@@ -70,7 +73,7 @@ object Main extends Serializable {
    * Custom writer to support complete output mode for the text writer of count metric
    * @return
    */
-  def createWriterForCountMetric(): ForeachWriter[(String, CountMetric)] = {
+  def createWriterForCountMetric(projectPath: String): ForeachWriter[(String, CountMetric)] = {
     new ForeachWriter[(String, CountMetric)] {
       var fileWriter: FileWriter = _
 
@@ -83,8 +86,8 @@ object Main extends Serializable {
       }
 
       override def open(partitionId: Long, version: Long): Boolean = {
-        FileUtils.forceMkdir(new File(s"output/count-metric/${partitionId}"))
-        fileWriter = new FileWriter(new File(s"output/count-metric/${partitionId}/temp.txt"))
+        FileUtils.forceMkdir(new File(projectPath +"output/count-metric/${partitionId}"))
+        fileWriter = new FileWriter(new File(projectPath +"output/count-metric/${partitionId}/temp.txt"))
         true
 
       }

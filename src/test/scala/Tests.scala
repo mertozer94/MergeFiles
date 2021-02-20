@@ -1,6 +1,6 @@
 import java.io.{File, FileWriter}
 
-import model.CountMetric
+import com.merge.model.CountMetric
 import org.apache.commons.io.FileUtils
 import org.apache.spark.sql.functions.lit
 import org.apache.spark.sql.streaming.OutputMode

@@ -1,4 +1,4 @@
-package init
+package com.merge.init
 
 import org.apache.spark.sql.SparkSession
 
