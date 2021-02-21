@@ -17,14 +17,14 @@ reprocessing the data.
 **Define the solution**
 
 The solution proposed here is to monitor all the data in the 'input' directory. If we add a new file in the input directory, then
-application will process immediately the new file, merge it with the previous processed result in streaming fashion and calculate count metrics.
+application will process immediately the new file, merge it with the previous processed result in streaming fashion and calculate metrics.
 
 
 More on detail on the solution;
 
 *1. Merge files*
 
-Application is going to partition data by the first letter of elements in the input data. All files sharing the same letter will be in the same output
+Application is going to partition data by the first letter of elements in the input data. All elements sharing the same letter will be in the same output
 partition. In the output directory we will have as many subdirectories as the unique first letters in all elements in all files.
 This gives us the ability to apply custom metrics or ability to search in a more efficient way afterwards.
 
@@ -34,7 +34,7 @@ This gives us the ability to apply custom metrics or ability to search in a more
 
 Merges all files in the input directory (we could add also a new files into directory while this application is running)
 And writes them into output directory with the total number of occurrence of that element in all files.  
-This count value is updated everytime we add new file to the directory.
+This count value is updated everytime we add new files to the directory.
 In the output directory we will one file containing all the summary of key and count pair.
 
 
@@ -48,18 +48,18 @@ In the output directory we will one file containing all the summary of key and c
 
 3. New files are merged and metrics are calculated automaticaly, no further action is needed.
 
-4. In summary, we are solving the problems that we have mentioned in analyze the problem section.
+4. In summary, we are solving the efficiently problems that we have mentioned in analyze the problem section.
 
 *Cons:*
 
 1. No rollback available for the moment. If we were given a corrupted input, then the result will be wrong as well.  
 We could introduce maybe versioning of the recent data, or have more granularity on the partition data (such as add date to partitionCol)  
-So that we can delete all files corresponding to the corrupted input.
+So that we can delete all files corresponding to the corrupted input or version.
 
 2. This solution assumes that data is uniformly distributed by the first letter of elements in input data. If not, we could have some hot partition problems.
 
 3. For the moment, this application is merging all files in the given input directory and calculating one count metric.
-But there could be a need to merge only specific files (excluded some) and calculate the metrics for those specific files.
+But there could be a need to merge only specific files (or excluded some) and calculate the metrics for those specific files.
 
 
 **Write code that is reliable, testable and maintainable**
@@ -69,7 +69,7 @@ It has a lot of room for development, automating testing, logging, monitoring et
 
 
 **Write a unit test case and how to run it ?**
-Since I was given a limited time, I couldn't write all the unit tests and the current test could be improved.
+Since I was given a limited time, I couldn't write all the unit tests, and the current test could be improved.
 
 The unit test was written for 'count metric'. The idea behind of it is, we provide a small file that we know the number of counts per name.
 And then we simply compare the result with our expected values.
@@ -80,6 +80,7 @@ And could be ran by;
 
 *mvn test*
 
+or manually in your IDE by running the test.
 
 **Prerequisites**
 
@@ -95,18 +96,23 @@ installed
 **Launch on a spark cluster with docker:**
 
 
-1. git clone https://github.com/mertozer94/MergeFiles.git
+1. Get the project
+
+```git clone https://github.com/mertozer94/MergeFiles.git```
 
 2. Create jar at the root of the project
-cd /path/toYourProject
-mvn clean package
+```cd /path/toYourProject```
+
+then
+
+```mvn clean package```
 
 3. Modify docker-compose.yml
 
 Change all of the occurences of '/home/mert/IdeaProjects/VeeavaMergeFiles' to {/path/toYourProject}
 
 4. Launch spark cluster
-docker-compose up -d
+```docker-compose up -d```
 
 go to http://localhost:8080/
 
@@ -115,34 +121,37 @@ url will look like the following: spark://bbbb2660e3f6:707
 
 5. Connect to the docker container
 
-docker-compose exec spark bash
+```docker-compose exec spark bash```
 
 6. Submit the job
 
+```
 ./bin/spark-submit --class com.merge.Main \  
 --master {sparUrlFromStep4} \  
 --deploy-mode client \  
 {/path/toYourProject}/target/VeevaMergeFiles-1.0-jar-with-dependencies.jar \  
 {sparUrlFromStep4} \  
 {/path/toYourProject}/
+```
 
 The '/' at the end is important.
 
 7.  Add data and verify results
 
-put data in input directory and verify the files created in the output directory
+put data in input directory at the {/path/toYourProject} and verify the files created in the output directory in the {/path/toYourProject}
 
 
-Don't forget to stop cluster with
-docker stop veeavamergefiles_spark_1 veeavamergefiles_spark-worker-1_1 veeavamergefiles_spark-worker-2_1
+Don't forget to stop cluster when you are done testing
 
-**Launch it within your IDE locally:**
+```docker stop veeavamergefiles_spark_1 veeavamergefiles_spark-worker-1_1 veeavamergefiles_spark-worker-2_1```
+
+**Launch it within your IDE locally:**z
 
 1. Open the project in your favorite IDE
 
-2. mvn clean package
+2. ```mvn clean package``` (with your IDE or from terminal)
 
-3. run the Main.scala class with giving two parameters spark url and path to this project
+3. run the Main.scala class with giving two parameters spark url (which could be local or master and path to this project
 
 4. put data in input directory and verify the files created in the output directory
 
